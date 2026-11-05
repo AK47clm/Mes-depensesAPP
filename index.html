@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08090a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ledger">
+  <meta name="description" content="Un budget personnel sobre, privé et conservé sur votre appareil.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2308090a'/%3E%3Cpath d='M19 14h8v28h20v8H19z' fill='%23ff3b30'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='42' fill='%2308090a'/%3E%3Cpath d='M54 38h24v80h58v24H54z' fill='%23ff3b30'/%3E%3C/svg%3E">
+  <link rel="manifest" id="app-manifest">
+  <title>Ledger — Budget personnel</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08090a;
+      --panel: rgba(24, 25, 28, .78);
+      --panel-solid: #17181b;
+      --panel-raised: #202124;
+      --line: rgba(255,255,255,.085);
+      --muted: #8d9097;
+      --text: #f5f5f4;
+      --accent: #ff3b30;
+      --green: #8bd6ae;
+      --blue: #86a8ff;
+      --yellow: #ffd166;
+      --radius: 22px;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text); font-family: var(--font);
+      background:
+        radial-gradient(ellipse at 50% -16%, rgba(255,59,48,.13), transparent 43%),
+        radial-gradient(rgba(255,255,255,.055) .75px, transparent .75px) 0 0 / 14px 14px,
+        var(--bg);
+      -webkit-font-smoothing: antialiased;
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom));
+    }
+    button, input, select, textarea { font: inherit; }
+    button { color: inherit; }
+    .app { width: 100%; max-width: 720px; margin: 0 auto; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin: 5px 2px 24px; }
+    .brand { display:flex; align-items:center; gap:11px; }
+    .brand-mark { width:35px; height:35px; display:grid; place-items:center; border:1px solid rgba(255,59,48,.4); border-radius:12px; color:var(--accent); background:rgba(255,59,48,.09); animation: breathe 3.2s ease-in-out infinite; }
+    .brand-name { font-size:14px; font-weight:740; letter-spacing:.02em; }
+    .brand-caption, .eyebrow, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing:.14em; text-transform:uppercase; }
+    .brand-caption { color:var(--muted); font-size:9px; margin-top:3px; }
+    .icon-button { width:40px; height:40px; display:grid; place-items:center; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.045); color:#d7d8da; cursor:pointer; transition:background .2s, transform .2s; }
+    .icon-button:active, .button:active, .nav-button:active { transform:scale(.96); }
+    .icon-button:hover { background:rgba(255,255,255,.09); }
+    .month-switch { display:flex; align-items:center; justify-content:space-between; margin:0 1px 14px; }
+    .month-title { font-size:14px; font-weight:650; text-transform:capitalize; }
+    .month-actions { display:flex; gap:7px; }
+    .month-actions .icon-button { width:34px; height:34px; border-radius:12px; }
+    .view { display:none; animation: rise .28s ease both; }
+    .view.active { display:block; }
+    .card { border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 14px 40px rgba(0,0,0,.16); }
+    .balance-card { position:relative; overflow:hidden; padding:23px 22px 20px; background:linear-gradient(145deg, rgba(40,27,28,.94), rgba(22,23,26,.88) 53%, rgba(22,23,26,.92)); }
+    .balance-card:after { content:""; position:absolute; right:-59px; top:-80px; width:200px; height:200px; border:1px solid rgba(255,59,48,.16); border-radius:50%; box-shadow:0 0 0 22px rgba(255,59,48,.025),0 0 0 44px rgba(255,59,48,.018); pointer-events:none; }
+    .eyebrow { color:var(--muted); font-size:9px; font-weight:650; }
+    .balance-label { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
+    .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px rgba(255,59,48,.9); }
+    .balance-value { position:relative; z-index:1; font-size:clamp(38px, 11vw, 54px); line-height:1.05; letter-spacing:-.055em; font-weight:680; margin:13px 0 18px; font-variant-numeric:tabular-nums; }
+    .balance-sub { position:relative; z-index:1; display:flex; justify-content:space-between; gap:10px; color:#b5b6bb; font-size:12px; }
+    .progress-track { position:relative; z-index:1; height:6px; border-radius:99px; background:rgba(255,255,255,.09); overflow:hidden; margin:10px 0 9px; }
+    .progress-fill { height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,#ff655b,var(--accent)); transition:width .45s cubic-bezier(.2,.8,.2,1); box-shadow:0 0 13px rgba(255,59,48,.36); }
+    .balance-foot { position:relative; z-index:1; display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .quick-stats { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin:12px 0; }
+    .mini-card { min-height:91px; padding:15px 15px 13px; }
+    .mini-head { display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:10px; }
+    .mini-icon { color:#aaaeb5; }
+    .mini-value { font-size:20px; font-weight:650; letter-spacing:-.04em; margin-top:13px; font-variant-numeric:tabular-nums; }
+    .mini-note { font-size:10px; color:var(--muted); margin-top:3px; }
+    .section-card { padding:18px; margin-top:12px; }
+    .section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:17px; }
+    .section-title { margin:0; font-size:14px; letter-spacing:-.02em; font-weight:650; }
+    .section-tag { color:var(--muted); font-size:9px; }
+    .donut-layout { display:grid; grid-template-columns:145px 1fr; align-items:center; gap:17px; }
+    .donut { width:145px; height:145px; border-radius:50%; display:grid; place-items:center; position:relative; }
+    .donut:after { content:""; position:absolute; inset:17px; border-radius:50%; background:#17181b; border:1px solid rgba(255,255,255,.035); }
+    .donut-center { position:relative; z-index:1; text-align:center; }
+    .donut-total { font-size:17px; font-weight:700; letter-spacing:-.04em; }
+    .donut-caption { color:var(--muted); font-size:8px; margin-top:4px; }
+    .legend { display:grid; gap:11px; min-width:0; }
+    .legend-row { display:grid; grid-template-columns:8px 1fr auto; gap:8px; align-items:center; font-size:10px; }
+    .legend-dot { width:7px; height:7px; border-radius:3px; }
+    .legend-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#d4d5d8; }
+    .legend-value { text-align:right; color:#d4d5d8; font-variant-numeric:tabular-nums; }
+    .legend-pct { display:block; color:var(--muted); font-size:9px; margin-top:2px; }
+    .empty-chart { border:1px dashed rgba(255,255,255,.12); border-radius:50%; background:transparent; }
+    .chart-wrap { width:100%; overflow:hidden; }
+    .bars { height:142px; display:flex; align-items:flex-end; gap:4px; padding:0 0 3px; border-bottom:1px solid var(--line); }
+    .bar-slot { min-width:0; flex:1; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:7px; }
+    .bar { width:min(100%,14px); min-height:2px; border-radius:5px 5px 2px 2px; background:rgba(255,255,255,.18); transition:height .3s ease, background .2s; }
+    .bar.today { background:var(--accent); box-shadow:0 0 12px rgba(255,59,48,.32); }
+    .bar-label { color:#73767d; font-size:8px; height:10px; font-variant-numeric:tabular-nums; }
+    .bar-label.today { color:#ff746c; }
+    .chart-foot { display:flex; justify-content:space-between; margin-top:9px; font-size:9px; color:var(--muted); }
+    .list { display:grid; gap:0; }
+    .expense-row, .bill-row { display:grid; grid-template-columns:38px minmax(0,1fr) auto 30px; align-items:center; gap:10px; padding:12px 0; border-top:1px solid rgba(255,255,255,.055); }
+    .expense-row:first-child, .bill-row:first-child { border-top:0; padding-top:0; }
+    .category-icon { width:36px; height:36px; display:grid; place-items:center; border-radius:13px; background:rgba(255,255,255,.065); color:#dddfe2; }
+    .row-main { min-width:0; }
+    .row-title { font-size:12px; font-weight:590; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .row-sub { margin-top:4px; color:var(--muted); font-size:9px; }
+    .row-amount { font-size:12px; font-weight:640; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .delete-button { width:29px; height:29px; display:grid; place-items:center; color:#777a80; background:none; border:0; border-radius:9px; cursor:pointer; }
+    .delete-button:hover { color:var(--accent); background:rgba(255,59,48,.1); }
+    .empty-state { text-align:center; color:var(--muted); padding:20px 10px; font-size:11px; line-height:1.6; }
+    .button { min-height:44px; padding:0 15px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.06); color:var(--text); cursor:pointer; font-size:12px; font-weight:600; transition:transform .16s,background .2s; }
+    .button:hover { background:rgba(255,255,255,.1); }
+    .button.primary { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 7px 20px rgba(255,59,48,.18); }
+    .button.primary:hover { background:#ff5147; }
+    .button.small { min-height:33px; padding:0 11px; border-radius:11px; font-size:10px; }
+    .button.ghost { background:transparent; }
+    .view-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:2px 1px 14px; }
+    .view-heading { margin:0; font-size:24px; letter-spacing:-.045em; }
+    .view-subtitle { color:var(--muted); font-size:11px; margin-top:5px; }
+    .bill-total { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); margin-top:8px; padding-top:15px; }
+    .bill-total strong { font-size:17px; }
+    .bill-check { accent-color:var(--accent); width:17px; height:17px; cursor:pointer; }
+    .bill-paid .row-title, .bill-paid .row-amount { text-decoration:line-through; color:#777a80; }
+    .bill-paid .row-sub { color:#686b71; }
+    .bill-row { grid-template-columns:20px minmax(0,1fr) auto 28px; }
+    .stat-salary { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .stat-salary-value { font-size:17px; font-weight:650; }
+    .category-stat { display:grid; grid-template-columns:minmax(72px,100px) 1fr auto; gap:10px; align-items:center; margin:15px 0; }
+    .category-stat-name { font-size:10px; color:#d6d7da; }
+    .category-stat-track { height:5px; border-radius:9px; background:rgba(255,255,255,.09); overflow:hidden; }
+    .category-stat-fill { height:100%; border-radius:inherit; background:var(--stat-color); min-width:0; transition:width .35s ease; }
+    .category-stat-value { min-width:64px; text-align:right; color:#d4d5d8; font-size:10px; font-variant-numeric:tabular-nums; }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 0; border-top:1px solid rgba(255,255,255,.06); }
+    .setting-row:first-of-type { border-top:0; padding-top:0; }
+    .setting-title { font-size:12px; font-weight:600; }
+    .setting-desc { font-size:10px; line-height:1.45; color:var(--muted); margin-top:4px; }
+    .field { display:grid; gap:8px; margin:16px 0; }
+    .field label { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#aeb0b6; }
+    .input, .select, .textarea { width:100%; min-height:48px; color:var(--text); border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.045); padding:0 13px; outline:none; }
+    .textarea { resize:vertical; min-height:76px; padding:12px 13px; }
+    .input:focus, .select:focus, .textarea:focus { border-color:rgba(255,59,48,.6); box-shadow:0 0 0 3px rgba(255,59,48,.1); }
+    .amount-input { min-height:76px; text-align:center; font-size:40px; font-weight:680; letter-spacing:-.05em; font-variant-numeric:tabular-nums; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+    .modal-backdrop { position:fixed; z-index:10; inset:0; display:none; align-items:flex-end; justify-content:center; padding:14px 14px max(14px, env(safe-area-inset-bottom)); background:rgba(0,0,0,.64); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+    .modal-backdrop.open { display:flex; animation:fade .18s ease both; }
+    .modal { width:100%; max-width:520px; max-height:min(90dvh,800px); overflow:auto; border:1px solid rgba(255,255,255,.11); border-radius:26px; background:#141517; box-shadow:0 24px 90px rgba(0,0,0,.6); padding:20px; animation:slide .24s cubic-bezier(.2,.8,.2,1) both; }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:3px; }
+    .modal-title { margin:0; font-size:18px; letter-spacing:-.035em; }
+    .modal-actions { display:flex; gap:9px; margin-top:17px; }
+    .modal-actions .button { flex:1; }
+    .tabbar { position:fixed; z-index:5; left:50%; bottom:max(11px, env(safe-area-inset-bottom)); transform:translateX(-50%); display:grid; grid-template-columns:repeat(4,1fr); width:min(calc(100% - 28px),520px); padding:7px; border:1px solid rgba(255,255,255,.1); border-radius:21px; background:rgba(22,23,25,.88); box-shadow:0 12px 35px rgba(0,0,0,.45); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); }
+    .nav-button { border:0; background:none; color:#777a80; border-radius:15px; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; transition:color .2s,background .2s,transform .15s; }
+    .nav-button span { font-size:8px; font-weight:600; letter-spacing:.03em; }
+    .nav-button.active { color:#fff; background:rgba(255,255,255,.07); }
+    .nav-button.active svg { color:var(--accent); }
+    .fab { position:fixed; z-index:4; right:max(22px, calc((100vw - 720px)/2 + 18px)); bottom:calc(87px + env(safe-area-inset-bottom)); width:54px; height:54px; display:grid; place-items:center; border-radius:19px; background:var(--accent); border:0; color:#fff; box-shadow:0 10px 27px rgba(255,59,48,.33); cursor:pointer; transition:transform .18s; }
+    .fab:active { transform:scale(.93); }
+    .notice { padding:12px 13px; border:1px solid rgba(255,209,102,.18); border-radius:14px; color:#c6c0ae; background:rgba(255,209,102,.055); font-size:10px; line-height:1.55; }
+    .notice strong { color:#f1d994; }
+    .source-links { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:12px; }
+    .source-links a { color:#c2c4c9; font-size:10px; text-decoration:underline; text-decoration-color:rgba(194,196,201,.35); text-underline-offset:3px; }
+    .fine-print { color:#777a80; font-size:9px; line-height:1.55; }
+    .toast { position:fixed; z-index:20; left:50%; bottom:calc(166px + env(safe-area-inset-bottom)); transform:translate(-50%,12px); padding:10px 14px; border:1px solid rgba(255,255,255,.12); border-radius:13px; background:#232427; color:#f2f2f2; font-size:11px; opacity:0; pointer-events:none; transition:.24s; box-shadow:0 8px 28px rgba(0,0,0,.35); }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+    @keyframes breathe { 0%,100%{box-shadow:0 0 0 rgba(255,59,48,0)} 50%{box-shadow:0 0 18px rgba(255,59,48,.12)} }
+    @keyframes rise { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fade { from{opacity:0} to{opacity:1} }
+    @keyframes slide { from{opacity:.7;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+    @media (min-width:680px) {
+      body { padding-top:32px; }
+      .topbar { margin-bottom:29px; }
+      .dashboard-grid { display:grid; grid-template-columns:1fr 1fr; align-items:start; gap:0 12px; }
+      .balance-card, .quick-stats { grid-column:1/-1; }
+      .section-card { margin-top:12px; }
+      .view-header { margin-top:6px; }
+      .modal-backdrop { align-items:center; }
+    }
+    @media (max-width:380px) {
+      body { padding-left:12px; padding-right:12px; }
+      .section-card { padding:15px; }
+      .donut-layout { grid-template-columns:126px 1fr; gap:12px; }
+      .donut { width:126px; height:126px; }
+      .donut:after { inset:15px; }
+      .legend { gap:9px; }
+      .legend-row { font-size:9px; gap:6px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="sr-only" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-ledger" viewBox="0 0 24 24"><path d="M5 3h3v15h11v3H5z" fill="currentColor"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 9h16M16 14h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M4 17 10 11l4 4 6-7M15 8h5v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 8.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Zm0-5.3 1.2 1.8 2.1.3 1.4-1 2 2-1 1.8.4 2.1 1.8 1.2v2.8l-1.8 1.2-.4 2.1 1 1.8-2 2-1.8-1-2.1.4-1.2 1.8H9.2L8 20.2l-2.1-.4-1.8 1-2-2 1-1.8-.4-2.1-1.8-1.2v-2.8l1.8-1.2.4-2.1-1-1.8 2-2 1.8 1 2.1-.3 1.2-1.8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-food" viewBox="0 0 24 24"><path d="M7 3v7m-3-7v4a3 3 0 0 0 6 0V3m-3 7v11m10-18v18m0-18c3 2 3 6 0 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-transport" viewBox="0 0 24 24"><path d="M5 17h14l-1.2-9H6.2L5 17Zm0 0v2m14-2v2M8 17v2m8-2v2M7 12h10M9 8l1-3h4l1 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="14.5" r=".8" fill="currentColor"/><circle cx="16" cy="14.5" r=".8" fill="currentColor"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-7 9 7v9H5v-9m5 9v-6h4v6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-health" viewBox="0 0 24 24"><path d="M12 20s-8-4.5-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.5-8 10-8 10Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 12h2l1-2 2 4 1-2h2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shopping" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8Zm4 0V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-fun" viewBox="0 0 24 24"><path d="M4 7h16v12H4zM8 4v6m8-6v6M8 14h.01M12 14h.01M16 14h.01" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bill" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 14v5h14v-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><svg width="20" height="20"><use href="#i-ledger"/></svg></div>
+        <div><div class="brand-name">ledger</div><div class="brand-caption">budget personnel</div></div>
+      </div>
+      <button class="icon-button" type="button" data-view="settings" aria-label="Ouvrir les réglages"><svg width="18" height="18"><use href="#i-settings"/></svg></button>
+    </header>
+    <div class="month-switch" id="monthSwitch">
+      <div class="eyebrow">Période</div>
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="month-title" id="monthTitle"></div>
+        <div class="month-actions">
+          <button class="icon-button" id="prevMonth" type="button" aria-label="Mois précédent"><svg width="17" height="17"><use href="#i-chevron-left"/></svg></button>
+          <button class="icon-button" id="nextMonth" type="button" aria-label="Mois suivant"><svg width="17" height="17"><use href="#i-chevron-right"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <section class="view active" id="view-home" aria-label="Tableau de bord">
+      <div class="dashboard-grid">
+        <article class="card balance-card">
+          <div class="balance-label"><span class="live-dot"></span><span class="eyebrow">Disponible ce mois</span></div>
+          <div class="balance-value" id="balanceValue">0 €</div>
+          <div class="balance-sub"><span id="spentText">0 € dépensés</span><span id="salaryText">Salaire non défini</span></div>
+          <div class="progress-track"><div class="progress-fill" id="salaryProgress"></div></div>
+          <div class="balance-foot"><span>Consommation du salaire</span><span id="progressLabel">0 %</span></div>
+        </article>
+        <div class="quick-stats">
+          <article class="card mini-card">
+            <div class="mini-head"><span>Dépenses du mois</span><svg class="mini-icon" width="16" height="16"><use href="#i-trend"/></svg></div>
+            <div class="mini-value" id="monthSpend">0 €</div><div class="mini-note" id="expenseCount">0 opération</div>
+          </article>
+          <article class="card mini-card">
+            <div class="mini-head"><span>Factures restantes</span><svg class="mini-icon" width="16" height="16"><use href="#i-receipt"/></svg></div>
+            <div class="mini-value" id="billRemainingMini">0 €</div><div class="mini-note" id="billCountMini">0 facture</div>
+          </article>
+        </div>
+        <article class="card section-card">
+          <div class="section-heading"><h2 class="section-title">Répartition</h2><span class="eyebrow section-tag">Catégories</span></div>
+          <div class="donut-layout"><div class="donut empty-chart" id="donut"><div class="donut-center"><div class="donut-total" id="donutTotal">0 €</div><div class="donut-caption">CE MOIS</div></div></div><div class="legend" id="categoryLegend"></div></div>
+        </article>
+        <article class="card section-card">
+          <div class="section-heading"><h2 class="section-title">Rythme quotidien</h2><span class="eyebrow section-tag">Dépenses / jour</span></div>
+          <div class="chart-wrap"><div class="bars" id="dailyBars" aria-label="Graphique des dépenses par jour"></div><div class="chart-foot"><span>1</span><span id="daysInMonth">31 jours</span></div></div>
+        </article>
+        <article class="card section-card">
+          <div class="section-heading"><h2 class="section-title">Dernières dépenses</h2><button class="button small ghost" type="button" id="seeAllExpenses">Tout voir</button></div>
+          <div class="list" id="recentExpenses"></div>
+        </article>
+      </div>
+    </section>
+    <section class="view" id="view-bills" aria-label="Factures">
+      <div class="view-header"><div><h1 class="view-heading">Factures</h1><div class="view-subtitle" id="billViewSubtitle"></div></div><button class="button small" type="button" id="addBillButton"><svg width="13" height="13" style="vertical-align:-2px;margin-right:4px"><use href="#i-plus"/></svg>Ajouter</button></div>
+      <article class="card section-card" style="margin-top:0">
+        <div class="section-heading"><h2 class="section-title">À régler</h2><span class="eyebrow section-tag" id="billMonthTag"></span></div>
+        <div class="list" id="billList"></div>
+        <div class="bill-total"><span class="eyebrow">Total restant</span><strong id="billRemaining">0 €</strong></div>
+      </article>
+      <p class="fine-print" style="padding:0 5px;margin-top:13px">Le statut payé et les échéances sont enregistrés uniquement sur cet appareil.</p>
+    </section>
+    <section class="view" id="view-stats" aria-label="Statistiques">
+      <div class="view-header"><div><h1 class="view-heading">Statistiques</h1><div class="view-subtitle">Votre mois, en détail</div></div></div>
+      <article class="card section-card" style="margin-top:0">
+        <div class="section-heading"><h2 class="section-title">Salaire mensuel</h2><span class="eyebrow section-tag">Référence</span></div>
+        <div class="stat-salary"><div><div class="eyebrow">Déclaré dans les réglages</div><div class="stat-salary-value" id="statsSalary">Non défini</div></div><button class="button small" type="button" data-view="settings">Modifier</button></div>
+      </article>
+      <article class="card section-card">
+        <div class="section-heading"><h2 class="section-title">Dépenses par catégorie</h2><span class="eyebrow section-tag" id="statsMonthLabel"></span></div>
+        <div id="categoryStats"></div>
+      </article>
+      <article class="card section-card">
+        <div class="section-heading"><h2 class="section-title">Résumé</h2><span class="eyebrow section-tag">Mois sélectionné</span></div>
+        <div class="setting-row"><div class="setting-title">Dépenses enregistrées</div><strong id="statsExpenseCount">0</strong></div>
+        <div class="setting-row"><div class="setting-title">Moyenne par jour actif</div><strong id="statsDailyAverage">0 €</strong></div>
+        <div class="setting-row"><div class="setting-title">Catégorie principale</div><strong id="statsTopCategory">—</strong></div>
+      </article>
+      <article class="card section-card">
+        <div class="section-heading"><h2 class="section-title">Toutes les dépenses</h2><span class="eyebrow section-tag">Suppression possible</span></div>
+        <div class="list" id="allExpenses"></div>
+      </article>
+    </section>
+    <section class="view" id="view-settings" aria-label="Réglages">
+      <div class="view-header"><div><h1 class="view-heading">Réglages</h1><div class="view-subtitle">Préférences et données locales</div></div></div>
+      <article class="card section-card" style="margin-top:0">
+        <div class="section-heading"><h2 class="section-title">Budget</h2><span class="eyebrow section-tag">Mensuel</span></div>
+        <form id="salaryForm">
+          <div class="field" style="margin-top:0"><label for="salaryInput">Salaire net mensuel (€)</label><input class="input" id="salaryInput" name="salary" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Ex. 2 400"></div>
+          <button class="button primary" type="submit">Enregistrer le salaire</button>
+        </form>
+      </article>
+      <article class="card section-card">
+        <div class="section-heading"><h2 class="section-title">Données</h2><span class="eyebrow section-tag">Sur cet appareil</span></div>
+        <div class="setting-row"><div><div class="setting-title">Importer un relevé CSV</div><div class="setting-desc">Ajoute les débits reconnus et tente une catégorie par libellé.</div></div><button class="button small" type="button" id="importButton"><svg width="14" height="14"><use href="#i-upload"/></svg></button></div>
+        <div class="setting-row"><div><div class="setting-title">Réinitialiser les données</div><div class="setting-desc">Efface dépenses, factures et salaire de ce navigateur.</div></div><button class="button small" type="button" id="resetButton">Effacer</button></div>
+        <p class="fine-print">Les données restent dans le stockage local du navigateur, sans compte ni synchronisation. Elles ne sont pas chiffrées par cette application. Exportez régulièrement vos relevés et évitez les appareils partagés.</p>
+      </article>
+      <article class="card section-card">
+        <div class="section-heading"><h2 class="section-title">Connexion bancaire</h2><span class="eyebrow section-tag">Open Banking</span></div>
+        <div class="notice"><strong>Pas de connexion directe dans cette version.</strong> Une page HTML seule ne peut pas protéger les secrets OAuth ni exploiter durablement les API AISP. Pour connecter une banque, il faut un prestataire réglementé ou un statut/mandat adapté, une authentification forte, un backend sécurisé et un contrat de service.</div>
+        <p class="setting-desc" style="margin-top:14px;line-height:1.65">La DSP2 autorise l’accès aux données de comptes avec le consentement explicite de l’utilisateur et impose des échanges sécurisés. Revolut dispose d’une API Open Banking pour les prestataires tiers réglementés : ce n’est pas une API personnelle librement utilisable depuis un navigateur. Le partenariat public Revolut–Tink trouvé concerne le paiement initié via Tink ; il ne prouve pas à lui seul une couverture de lecture des transactions Revolut pour votre projet. Société Générale est disponible dans des services d’agrégation existants, mais la disponibilité et la fiabilité dépendent du connecteur et de l’offre bancaire.</p>
+        <p class="setting-desc" style="margin-top:10px;line-height:1.65">Les agrégateurs proposent des offres professionnelles, parfois une possibilité d’opérer comme agent sous leur agrément. Le contrat, le contrôle d’éligibilité, la conformité, le traitement des données et l’intégration serveur restent à prévoir. Les fournisseurs consultés publient des tarifs sur devis ou demandent de les contacter : « plusieurs milliers d’euros » peut servir d’hypothèse budgétaire initiale, mais aucun tarif universel ni coût par compte n’est confirmé publiquement. Vérifiez une offre écrite pour les banques, volumes et durées concernés.</p>
+        <p class="setting-desc" style="margin-top:10px;line-height:1.65"><strong style="color:#e2e2e3">Alternative proche :</strong> saisie quotidienne ici, ou export CSV depuis SG/Revolut puis import local. L’import reconnaît les colonnes courantes Date, Libellé/Description, Débit/Crédit ou Amount. Une app bancaire d’agrégation grand public comme Bankin’ peut aussi agréger certaines banques sans développer votre propre backend ; ce serait une autre application, pas une synchronisation vers Ledger.</p>
+        <div class="source-links">
+          <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32015L2366" target="_blank" rel="noopener">Directive DSP2, art. 67</a>
+          <a href="https://developer.revolut.com/docs/guides/build-banking-apps/introduction-to-the-open-banking-api/who-can-access-the-api" target="_blank" rel="noopener">Revolut : accès à l’API</a>
+          <a href="https://tink.com/press/revolut-partnership/" target="_blank" rel="noopener">Tink × Revolut : annonce</a>
+          <a href="https://tink.com/account-aggregation/" target="_blank" rel="noopener">Tink : agrégation / agent</a>
+          <a href="https://www.bridgeapi.io/bridge-et-vous/logiciels-metier" target="_blank" rel="noopener">Bridge : tarification sur devis</a>
+          <a href="https://support.bankin.com/hc/fr/articles/360020066272-Qu-est-ce-que-Bankin" target="_blank" rel="noopener">Bankin’ : banques connectées</a>
+        </div>
+      </article>
+      <div class="fine-print" style="text-align:center;margin:18px 0 8px">LEDGER / VERSION LOCALE 1.0</div>
+    </section>
+  </main>
+  <button class="fab" id="addExpenseButton" type="button" aria-label="Ajouter une dépense"><svg width="24" height="24"><use href="#i-plus"/></svg></button>
+  <nav class="tabbar" aria-label="Navigation principale">
+    <button class="nav-button active" type="button" data-view="home"><svg width="19" height="19"><use href="#i-wallet"/></svg><span>Accueil</span></button>
+    <button class="nav-button" type="button" data-view="bills"><svg width="19" height="19"><use href="#i-receipt"/></svg><span>Factures</span></button>
+    <button class="nav-button" type="button" data-view="stats"><svg width="19" height="19"><use href="#i-trend"/></svg><span>Stats</span></button>
+    <button class="nav-button" type="button" data-view="settings"><svg width="19" height="19"><use href="#i-settings"/></svg><span>Réglages</span></button>
+  </nav>
+  <div class="modal-backdrop" id="expenseModal" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+    <div class="modal">
+      <div class="modal-head"><h2 class="modal-title" id="expenseModalTitle">Nouvelle dépense</h2><button class="icon-button" type="button" data-close="expenseModal" aria-label="Fermer"><svg width="17" height="17"><use href="#i-close"/></svg></button></div>
+      <form id="expenseForm">
+        <div class="field"><label for="expenseAmount">Montant</label><input class="input amount-input" id="expenseAmount" name="amount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" required></div>
+        <div class="form-grid">
+          <div class="field"><label for="expenseCategory">Catégorie</label><select class="select" id="expenseCategory" name="category" required></select></div>
+          <div class="field"><label for="expenseDate">Date</label><input class="input" id="expenseDate" name="date" type="date" required></div>
+        </div>
+        <div class="field"><label for="expenseNote">Note (facultatif)</label><textarea class="textarea" id="expenseNote" name="note" maxlength="120" placeholder="Ex. Courses du marché"></textarea></div>
+        <div class="modal-actions"><button class="button" type="button" data-close="expenseModal">Annuler</button><button class="button primary" type="submit">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="billModal" role="dialog" aria-modal="true" aria-labelledby="billModalTitle">
+    <div class="modal">
+      <div class="modal-head"><h2 class="modal-title" id="billModalTitle">Nouvelle facture</h2><button class="icon-button" type="button" data-close="billModal" aria-label="Fermer"><svg width="17" height="17"><use href="#i-close"/></svg></button></div>
+      <form id="billForm">
+        <div class="field"><label for="billName">Nom</label><input class="input" id="billName" name="name" maxlength="80" placeholder="Ex. Électricité" required></div>
+        <div class="form-grid">
+          <div class="field"><label for="billAmount">Montant (€)</label><input class="input" id="billAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" required></div>
+          <div class="field"><label for="billDue">Échéance</label><input class="input" id="billDue" name="dueDate" type="date" required></div>
+        </div>
+        <div class="modal-actions"><button class="button" type="button" data-close="billModal">Annuler</button><button class="button primary" type="submit">Ajouter</button></div>
+      </form>
+    </div>
+  </div>
+  <input class="sr-only" type="file" id="csvFile" accept=".csv,text/csv,text/plain">
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    (function () {
+      "use strict";
+      var STORAGE_KEY = "ledger-budget-v1";
+      var categories = ["Alimentation", "Transport", "Loisirs", "Logement", "Santé", "Shopping", "Factures", "Autre"];
+      var categoryColors = ["#ff6c62", "#f6a45d", "#d79aff", "#8f9fff", "#8bd6ae", "#f57eab", "#6ccfd1", "#a4a8b0"];
+      var categoryIcons = ["i-food", "i-transport", "i-fun", "i-home", "i-health", "i-shopping", "i-bill", "i-more"];
+      var state = loadState();
+      var currentView = "home";
+      var monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      var toastTimer = null;
+      var deferredInstall = null;
+      var currencyFormat = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 });
+      var monthFormat = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+      var dateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
+      var longDateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+      function loadState() {
+        var fallback = { salary: 0, expenses: [], bills: [] };
+        try {
+          var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (!parsed || typeof parsed !== "object") return fallback;
+          return {
+            salary: Number(parsed.salary) || 0,
+            expenses: Array.isArray(parsed.expenses) ? parsed.expenses.filter(validExpense) : [],
+            bills: Array.isArray(parsed.bills) ? parsed.bills.filter(validBill) : []
+          };
+        } catch (error) { return fallback; }
+      }
+      function validExpense(item) { return item && typeof item.id === "string" && Number(item.amount) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(item.date) && categories.indexOf(item.category) !== -1; }
+      function validBill(item) { return item && typeof item.id === "string" && String(item.name || "").trim() && Number(item.amount) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(item.dueDate); }
+      function persist() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        catch (error) { showToast("Stockage indisponible : espace navigateur plein."); }
+      }
+      function money(value) { return currencyFormat.format(Number(value) || 0); }
+      function todayISO() {
+        var d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      }
+      function isoMonth(dateString) { return String(dateString).slice(0, 7); }
+      function monthKey(date) { return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"); }
+      function monthDateLabel(value, full) {
+        var parts = value.split("-").map(Number);
+        var date = new Date(parts[0], parts[1] - 1, parts[2] || 1);
+        return (full ? longDateFormat : dateFormat).format(date);
+      }
+      function makeId() { return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2); }
+      function escapeHTML(value) {
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) { return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]; });
+      }
+      function haptic() { try { if (navigator.vibrate) navigator.vibrate(9); } catch (e) {} }
+      function showToast(message) {
+        var el = document.getElementById("toast");
+        el.textContent = message;
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2500);
+      }
+      function activeExpenses() {
+        var key = monthKey(monthCursor);
+        return state.expenses.filter(function (item) { return isoMonth(item.date) === key; }).sort(function (a, b) { return b.date.localeCompare(a.date) || (b.createdAt || "").localeCompare(a.createdAt || ""); });
+      }
+      function activeBills() {
+        var key = monthKey(monthCursor);
+        return state.bills.filter(function (item) { return isoMonth(item.dueDate) === key; }).sort(function (a, b) { return a.dueDate.localeCompare(b.dueDate); });
+      }
+      function sum(items, field) { return items.reduce(function (total, item) { return total + (Number(item[field]) || 0); }, 0); }
+      function grouped(expenses) {
+        var totals = {};
+        categories.forEach(function (category) { totals[category] = 0; });
+        expenses.forEach(function (item) { totals[item.category] = (totals[item.category] || 0) + Number(item.amount); });
+        return totals;
+      }
+      function iconMarkup(index) { return '<svg width="18" height="18" aria-hidden="true"><use href="#' + categoryIcons[index] + '"></use></svg>'; }
+      function expenseRow(item) {
+        var index = Math.max(0, categories.indexOf(item.category));
+        var title = item.note && item.note.trim() ? item.note.trim() : item.category;
+        return '<div class="expense-row"><div class="category-icon" style="color:' + categoryColors[index] + '">' + iconMarkup(index) + '</div><div class="row-main"><div class="row-title">' + escapeHTML(title) + '</div><div class="row-sub">' + escapeHTML(item.category) + ' · ' + escapeHTML(monthDateLabel(item.date, false)) + (item.imported ? ' · CSV' : '') + '</div></div><div class="row-amount">−' + money(item.amount) + '</div><button class="delete-button" type="button" data-delete-expense="' + escapeHTML(item.id) + '" aria-label="Supprimer ' + escapeHTML(title) + '"><svg width="15" height="15"><use href="#i-close"></use></svg></button></div>';
+      }
+      function render() {
+        var expenses = activeExpenses();
+        var bills = activeBills();
+        var monthExpenses = sum(expenses, "amount");
+        var remaining = state.salary - monthExpenses;
+        var billRemaining = bills.filter(function (bill) { return !bill.paid; }).reduce(function (n, bill) { return n + Number(bill.amount); }, 0);
+        var salaryPercent = state.salary > 0 ? Math.min(100, Math.round(monthExpenses / state.salary * 100)) : 0;
+        document.getElementById("monthTitle").textContent = monthFormat.format(monthCursor);
+        document.getElementById("balanceValue").textContent = money(remaining);
+        document.getElementById("balanceValue").style.color = remaining < 0 ? "#ff746c" : "";
+        document.getElementById("spentText").textContent = money(monthExpenses) + " dépensés";
+        document.getElementById("salaryText").textContent = state.salary > 0 ? "sur " + money(state.salary) : "Salaire non défini";
+        document.getElementById("salaryProgress").style.width = salaryPercent + "%";
+        document.getElementById("progressLabel").textContent = state.salary > 0 ? salaryPercent + " %" : "—";
+        document.getElementById("monthSpend").textContent = money(monthExpenses);
+        document.getElementById("expenseCount").textContent = expenses.length + (expenses.length === 1 ? " opération" : " opérations");
+        document.getElementById("billRemainingMini").textContent = money(billRemaining);
+        document.getElementById("billCountMini").textContent = bills.length + (bills.length === 1 ? " facture" : " factures");
+        renderDonut(expenses);
+        renderBars(expenses);
+        renderExpenseList(expenses);
+        renderBills(bills);
+        renderStats(expenses, monthExpenses);
+        document.getElementById("salaryInput").value = state.salary ? String(state.salary) : "";
+      }
+      function renderDonut(expenses) {
+        var totals = grouped(expenses);
+        var all = sum(expenses, "amount");
+        var legend = document.getElementById("categoryLegend");
+        var donut = document.getElementById("donut");
+        document.getElementById("donutTotal").textContent = money(all);
+        if (all <= 0) {
+          donut.classList.add("empty-chart");
+          donut.style.background = "";
+          legend.innerHTML = '<div class="empty-state" style="padding:5px 0;text-align:left">Aucune dépense<br>pour ce mois.</div>';
+          return;
+        }
+        donut.classList.remove("empty-chart");
+        var offset = 0;
+        var stops = [];
+        categories.forEach(function (category, index) {
+          var amount = totals[category];
+          if (!amount) return;
+          var start = offset;
+          offset += amount / all * 100;
+          stops.push(categoryColors[index] + " " + start + "% " + offset + "%");
+        });
+        donut.style.background = "conic-gradient(" + stops.join(",") + ")";
+        var ranked = categories.map(function (name, index) { return { name:name, amount:totals[name], color:categoryColors[index] }; }).filter(function (item) { return item.amount > 0; }).sort(function (a, b) { return b.amount - a.amount; }).slice(0, 5);
+        legend.innerHTML = ranked.map(function (item) {
+          var pct = Math.round(item.amount / all * 100);
+          return '<div class="legend-row"><span class="legend-dot" style="background:' + item.color + '"></span><span class="legend-name">' + escapeHTML(item.name) + '<span class="legend-pct">' + pct + ' %</span></span><span class="legend-value">' + money(item.amount) + '</span></div>';
+        }).join("");
+      }
+      function renderBars(expenses) {
+        var year = monthCursor.getFullYear(), month = monthCursor.getMonth();
+        var count = new Date(year, month + 1, 0).getDate();
+        var totals = {};
+        expenses.forEach(function (item) { var d = Number(item.date.slice(8, 10)); totals[d] = (totals[d] || 0) + Number(item.amount); });
+        var max = Math.max.apply(null, [0].concat(Object.keys(totals).map(function (d) { return totals[d]; })));
+        var today = todayISO();
+        var html = "";
+        for (var day = 1; day <= count; day++) {
+          var amount = totals[day] || 0;
+          var height = max > 0 ? Math.max(amount ? 5 : 2, amount / max * 100) : 2;
+          var isToday = today === monthKey(monthCursor) + "-" + String(day).padStart(2, "0");
+          html += '<div class="bar-slot" title="' + day + ' : ' + money(amount) + '"><div class="bar' + (isToday ? ' today' : '') + '" style="height:' + height + '%"></div><span class="bar-label' + (isToday ? ' today' : '') + '">' + (day === 1 || day === count || day % 5 === 0 || isToday ? day : "") + '</span></div>';
+        }
+        document.getElementById("dailyBars").innerHTML = html;
+        document.getElementById("dailyBars").setAttribute("aria-label", "Dépenses par jour, total " + money(sum(expenses, "amount")));
+        document.getElementById("daysInMonth").textContent = count + " jours";
+      }
+      function renderExpenseList(expenses) {
+        var recent = expenses.slice(0, 5);
+        document.getElementById("recentExpenses").innerHTML = recent.length ? recent.map(expenseRow).join("") : '<div class="empty-state">Rien à signaler pour le moment.<br>Ajoutez une dépense pour commencer.</div>';
+      }
+      function renderBills(bills) {
+        document.getElementById("billViewSubtitle").textContent = "Échéances de " + monthFormat.format(monthCursor);
+        document.getElementById("billMonthTag").textContent = monthFormat.format(monthCursor);
+        var remaining = bills.filter(function (bill) { return !bill.paid; }).reduce(function (n, bill) { return n + Number(bill.amount); }, 0);
+        document.getElementById("billRemaining").textContent = money(remaining);
+        document.getElementById("billList").innerHTML = bills.length ? bills.map(function (bill) {
+          return '<div class="bill-row' + (bill.paid ? ' bill-paid' : '') + '"><input class="bill-check" type="checkbox" data-toggle-bill="' + escapeHTML(bill.id) + '" ' + (bill.paid ? "checked" : "") + ' aria-label="Marquer ' + escapeHTML(bill.name) + ' comme payée"><div class="row-main"><div class="row-title">' + escapeHTML(bill.name) + '</div><div class="row-sub">Échéance · ' + escapeHTML(monthDateLabel(bill.dueDate, false)) + '</div></div><div class="row-amount">' + money(bill.amount) + '</div><button class="delete-button" type="button" data-delete-bill="' + escapeHTML(bill.id) + '" aria-label="Supprimer la facture ' + escapeHTML(bill.name) + '"><svg width="15" height="15"><use href="#i-close"></use></svg></button></div>';
+        }).join("") : '<div class="empty-state">Aucune facture pour ce mois.<br>Ajoutez votre première échéance.</div>';
+      }
+      function renderStats(expenses, monthExpenses) {
+        var totals = grouped(expenses);
+        var max = Math.max.apply(null, [0].concat(categories.map(function (c) { return totals[c]; })));
+        document.getElementById("statsSalary").textContent = state.salary > 0 ? money(state.salary) : "Non défini";
+        document.getElementById("statsMonthLabel").textContent = monthFormat.format(monthCursor);
+        document.getElementById("categoryStats").innerHTML = monthExpenses ? categories.map(function (category, index) {
+          var value = totals[category] || 0;
+          if (!value) return "";
+          var percent = max ? Math.round(value / max * 100) : 0;
+          return '<div class="category-stat"><span class="category-stat-name">' + escapeHTML(category) + '</span><div class="category-stat-track"><div class="category-stat-fill" style="--stat-color:' + categoryColors[index] + ';width:' + percent + '%"></div></div><span class="category-stat-value">' + money(value) + '</span></div>';
+        }).join("") : '<div class="empty-state">Aucune dépense à analyser pour ce mois.</div>';
+        var activeDays = {};
+        expenses.forEach(function (item) { activeDays[item.date] = true; });
+        document.getElementById("statsExpenseCount").textContent = String(expenses.length);
+        document.getElementById("statsDailyAverage").textContent = money(Object.keys(activeDays).length ? monthExpenses / Object.keys(activeDays).length : 0);
+        var top = categories.map(function (name) { return { name:name, amount:totals[name] }; }).sort(function (a, b) { return b.amount - a.amount; })[0];
+        document.getElementById("statsTopCategory").textContent = top && top.amount ? top.name : "—";
+        document.getElementById("allExpenses").innerHTML = expenses.length ? expenses.map(expenseRow).join("") : '<div class="empty-state">Aucune dépense pour ce mois.</div>';
+      }
+      function setView(name) {
+        if (!document.getElementById("view-" + name)) return;
+        currentView = name;
+        document.querySelectorAll(".view").forEach(function (view) { view.classList.toggle("active", view.id === "view-" + name); });
+        document.querySelectorAll(".nav-button").forEach(function (button) { button.classList.toggle("active", button.dataset.view === name); });
+        document.getElementById("monthSwitch").style.display = "flex";
+        document.getElementById("addExpenseButton").style.display = name === "settings" ? "none" : "grid";
+        window.scrollTo({ top:0, behavior:"smooth" });
+      }
+      function openModal(id) {
+        var modal = document.getElementById(id);
+        modal.classList.add("open");
+        document.body.style.overflow = "hidden";
+        setTimeout(function () {
+          var focus = modal.querySelector("input:not([type=checkbox]), select, textarea");
+          if (focus) focus.focus({ preventScroll:true });
+        }, 100);
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+        document.body.style.overflow = "";
+      }
+      function openExpense() {
+        document.getElementById("expenseForm").reset();
+        document.getElementById("expenseDate").value = todayISO();
+        document.getElementById("expenseCategory").value = "Alimentation";
+        openModal("expenseModal");
+      }
+      function openBill() {
+        document.getElementById("billForm").reset();
+        var today = todayISO();
+        document.getElementById("billDue").value = monthKey(monthCursor) === today.slice(0, 7) ? today : monthKey(monthCursor) + "-01";
+        openModal("billModal");
+      }
+      function bindEvents() {
+        document.querySelectorAll("[data-view]").forEach(function (button) { button.addEventListener("click", function () { setView(button.dataset.view); }); });
+        document.getElementById("prevMonth").addEventListener("click", function () { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1); render(); });
+        document.getElementById("nextMonth").addEventListener("click", function () { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1); render(); });
+        document.getElementById("addExpenseButton").addEventListener("click", openExpense);
+        document.getElementById("seeAllExpenses").addEventListener("click", function () { setView("stats"); });
+        document.getElementById("addBillButton").addEventListener("click", openBill);
+        document.querySelectorAll("[data-close]").forEach(function (button) { button.addEventListener("click", function () { closeModal(button.dataset.close); }); });
+        document.querySelectorAll(".modal-backdrop").forEach(function (backdrop) { backdrop.addEventListener("click", function (event) { if (event.target === backdrop) closeModal(backdrop.id); }); });
+        document.addEventListener("keydown", function (event) { if (event.key === "Escape") { document.querySelectorAll(".modal-backdrop.open").forEach(function (modal) { closeModal(modal.id); }); } });
+        document.getElementById("expenseForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+          var form = new FormData(event.currentTarget);
+          var amount = Number(form.get("amount"));
+          if (!(amount > 0)) return;
+          state.expenses.push({ id:makeId(), amount:Math.round(amount * 100) / 100, category:String(form.get("category")), date:String(form.get("date")), note:String(form.get("note") || "").trim(), createdAt:new Date().toISOString() });
+          persist(); haptic(); closeModal("expenseModal"); setView("home"); render(); showToast("Dépense enregistrée");
+        });
+        document.getElementById("billForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+          var form = new FormData(event.currentTarget);
+          var amount = Number(form.get("amount"));
+          if (!(amount > 0)) return;
+          state.bills.push({ id:makeId(), amount:Math.round(amount * 100) / 100, name:String(form.get("name")).trim(), dueDate:String(form.get("dueDate")), paid:false });
+          persist(); haptic(); closeModal("billModal"); render(); showToast("Facture ajoutée");
+        });
+        document.getElementById("salaryForm").addEventListener("submit", function (event) {
+          event.preventDefault();
+          state.salary = Math.max(0, Number(document.getElementById("salaryInput").value) || 0);
+          persist(); render(); showToast("Salaire enregistré");
+        });
+        document.addEventListener("click", function (event) {
+          var delExpense = event.target.closest("[data-delete-expense]");
+          var delBill = event.target.closest("[data-delete-bill]");
+          if (delExpense) {
+            var id = delExpense.dataset.deleteExpense;
+            state.expenses = state.expenses.filter(function (item) { return item.id !== id; });
+            persist(); render(); haptic(); showToast("Dépense supprimée");
+          }
+          if (delBill) {
+            var billId = delBill.dataset.deleteBill;
+            state.bills = state.bills.filter(function (item) { return item.id !== billId; });
+            persist(); render(); haptic(); showToast("Facture supprimée");
+          }
+        });
+        document.addEventListener("change", function (event) {
+          var checkbox = event.target.closest("[data-toggle-bill]");
+          if (!checkbox) return;
+          var bill = state.bills.find(function (item) { return item.id === checkbox.dataset.toggleBill; });
+          if (bill) { bill.paid = checkbox.checked; persist(); render(); haptic(); }
+        });
+        document.getElementById("resetButton").addEventListener("click", function () {
+          if (!window.confirm("Effacer toutes les dépenses, factures et le salaire enregistrés sur cet appareil ? Cette action est irréversible.")) return;
+          state = { salary:0, expenses:[], bills:[] }; persist(); render(); showToast("Données effacées");
+        });
+        document.getElementById("importButton").addEventListener("click", function () { document.getElementById("csvFile").click(); });
+        document.getElementById("csvFile").addEventListener("change", importCSV);
+        window.addEventListener("beforeinstallprompt", function (event) {
+          event.preventDefault();
+          deferredInstall = event;
+          document.getElementById("installButton").style.display = "inline-flex";
+        });
+      }
+      function normalizeHeader(value) { return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+      function parseCSVText(text) {
+        var first = String(text).split(/\r?\n/)[0] || "";
+        var separators = [";", ",", "\t"];
+        var sep = separators.sort(function (a, b) { return first.split(b).length - first.split(a).length; })[0];
+        var rows = [], row = [], field = "", quoted = false;
+        for (var i = 0; i < text.length; i++) {
+          var ch = text[i];
+          if (ch === '"') {
+            if (quoted && text[i + 1] === '"') { field += '"'; i++; }
+            else quoted = !quoted;
+          } else if (ch === sep && !quoted) { row.push(field); field = ""; }
+          else if ((ch === "\n" || ch === "\r") && !quoted) {
+            if (ch === "\r" && text[i + 1] === "\n") i++;
+            row.push(field); field = "";
+            if (row.some(function (x) { return x.trim() !== ""; })) rows.push(row);
+            row = [];
+          } else field += ch;
+        }
+        row.push(field);
+        if (row.some(function (x) { return x.trim() !== ""; })) rows.push(row);
+        return rows;
+      }
+      function parseDateValue(raw) {
+        var value = String(raw || "").trim();
+        var iso = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (iso) return iso[1] + "-" + String(iso[2]).padStart(2, "0") + "-" + String(iso[3]).padStart(2, "0");
+        var fr = value.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{2,4})/);
+        if (fr) {
+          var year = fr[3].length === 2 ? "20" + fr[3] : fr[3];
+          return year + "-" + String(fr[2]).padStart(2, "0") + "-" + String(fr[1]).padStart(2, "0");
+        }
+        var parsed = new Date(value);
+        return isNaN(parsed.getTime()) ? "" : parsed.getFullYear() + "-" + String(parsed.getMonth() + 1).padStart(2, "0") + "-" + String(parsed.getDate()).padStart(2, "0");
+      }
+      function parseAmount(raw) {
+        var value = String(raw || "").replace(/\u2212/g, "-").replace(/\u00a0/g, "").replace(/\s/g, "").replace(/[€$£]/g, "").replace(/[()]/g, function (c) { return c === "(" ? "-" : ""; });
+        if (!value) return NaN;
+        if (value.indexOf(",") !== -1 && value.indexOf(".") !== -1) {
+          if (value.lastIndexOf(",") > value.lastIndexOf(".")) value = value.replace(/\./g, "").replace(",", ".");
+          else value = value.replace(/,/g, "");
+        } else if (value.indexOf(",") !== -1) value = value.replace(",", ".");
+        value = value.replace(/[^0-9+.-]/g, "");
+        return Number(value);
+      }
+      function guessCategory(description) {
+        var text = String(description || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (/supermarche|carrefour|auchan|leclerc|monoprix|lidl|aldi|courses|boulangerie|restaurant|uber eats|deliveroo|food|market/.test(text)) return "Alimentation";
+        if (/sncf|ratp|metro|uber|bolt|taxi|essence|total energies|station|parking|transport|navigo/.test(text)) return "Transport";
+        if (/loyer|rent|immobilier|syndic|charges copro|assurance habitation/.test(text)) return "Logement";
+        if (/pharm|docteur|medical|sante|clinique|hopital|dentiste/.test(text)) return "Santé";
+        if (/netflix|spotify|cinema|theatre|concert|steam|jeux|loisir|disney/.test(text)) return "Loisirs";
+        if (/amazon|zara|h&m|decathlon|shopping|boutique|vinted/.test(text)) return "Shopping";
+        if (/edf|engie|electricite|internet|telephone|free mobile|orange|sfr|bouygues|eau|assurance/.test(text)) return "Factures";
+        return "Autre";
+      }
+      function importCSV(event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var rows = parseCSVText(String(reader.result || ""));
+          if (rows.length < 2) { showToast("CSV vide ou format non reconnu"); event.target.value = ""; return; }
+          var headers = rows[0].map(normalizeHeader);
+          function findHeader(test) { for (var i = 0; i < headers.length; i++) if (test(headers[i])) return i; return -1; }
+          var dateIndex = findHeader(function (h) { return /^(date|date operation|date de lop|date transaction|transaction date|completed date|started date|booking date|date comptable)$/.test(h) || (h.indexOf("date") === 0 && h.indexOf("value") === -1); });
+          var labelIndex = findHeader(function (h) { return /description|libelle|label|merchant|payee|beneficiaire|details|operation/.test(h); });
+          var amountIndex = findHeader(function (h) { return /^(amount|montant|montant eur|amount eur|somme)$/.test(h); });
+          var debitIndex = findHeader(function (h) { return /^(debit|montant debit|debit eur)$/.test(h); });
+          var creditIndex = findHeader(function (h) { return /^(credit|montant credit|credit eur)$/.test(h); });
+          if (dateIndex < 0 || labelIndex < 0 || (amountIndex < 0 && debitIndex < 0)) {
+            window.alert("Colonnes requises non trouvées. Utilisez un CSV avec Date, Libellé/Description et Amount, ou Débit/Crédit.");
+            event.target.value = ""; return;
+          }
+          var imported = [], existing = {};
+          state.expenses.forEach(function (item) { if (item.importKey) existing[item.importKey] = true; });
+          for (var r = 1; r < rows.length; r++) {
+            var cols = rows[r];
+            if (dateIndex >= cols.length || labelIndex >= cols.length) continue;
+            var date = parseDateValue(cols[dateIndex]);
+            var note = String(cols[labelIndex] || "").trim();
+            var amount = NaN;
+            if (debitIndex >= 0 || creditIndex >= 0) {
+              var debit = debitIndex >= 0 ? parseAmount(cols[debitIndex]) : 0;
+              var credit = creditIndex >= 0 ? parseAmount(cols[creditIndex]) : 0;
+              if (Number.isFinite(debit) && debit > 0) amount = debit;
+              else if (Number.isFinite(debit) && debit < 0) amount = Math.abs(debit);
+              else if (Number.isFinite(credit) && credit < 0) amount = Math.abs(credit);
+            } else {
+              var rawAmount = parseAmount(cols[amountIndex]);
+              if (Number.isFinite(rawAmount) && rawAmount < 0) amount = Math.abs(rawAmount);
+            }
+            if (!date || !note || !(amount > 0)) continue;
+            amount = Math.round(amount * 100) / 100;
+            var key = date + "|" + amount.toFixed(2) + "|" + note.toLowerCase().replace(/\s+/g, " ");
+            if (existing[key]) continue;
+            existing[key] = true;
+            imported.push({ id:makeId(), amount:amount, category:guessCategory(note), date:date, note:note.slice(0,120), imported:true, importKey:key, createdAt:new Date().toISOString() });
+          }
+          if (!imported.length) { showToast("Aucun nouveau débit reconnu"); event.target.value = ""; return; }
+          if (window.confirm(imported.length + (imported.length === 1 ? " dépense" : " dépenses") + " reconnue(s). Les libellés donnent une catégorie indicative. Les ajouter ?")) {
+            state.expenses = state.expenses.concat(imported);
+            persist(); render(); showToast(imported.length + " dépense(s) importée(s)");
+          }
+          event.target.value = "";
+        };
+        reader.onerror = function () { showToast("Lecture du fichier impossible"); event.target.value = ""; };
+        reader.readAsText(file);
+      }
+      function installManifest() {
+        function iconData(size) {
+          var canvas = document.createElement("canvas");
+          canvas.width = size; canvas.height = size;
+          var context = canvas.getContext("2d");
+          var radius = size * 0.23;
+          context.fillStyle = "#08090a";
+          context.beginPath();
+          context.moveTo(radius, 0); context.lineTo(size - radius, 0);
+          context.quadraticCurveTo(size, 0, size, radius); context.lineTo(size, size - radius);
+          context.quadraticCurveTo(size, size, size - radius, size); context.lineTo(radius, size);
+          context.quadraticCurveTo(0, size, 0, size - radius); context.lineTo(0, radius);
+          context.quadraticCurveTo(0, 0, radius, 0); context.fill();
+          context.fillStyle = "#ff3b30";
+          context.fillRect(size * 0.30, size * 0.20, size * 0.13, size * 0.53);
+          context.fillRect(size * 0.30, size * 0.60, size * 0.46, size * 0.13);
+          return canvas.toDataURL("image/png");
+        }
+        var icon192 = iconData(192);
+        var icon512 = iconData(512);
+        var pageUrl = new URL(location.href);
+        pageUrl.hash = "";
+        pageUrl.search = "";
+        var manifest = { name:"Ledger — Budget personnel", short_name:"Ledger", description:"Budget personnel local", start_url:pageUrl.href, scope:new URL(".", pageUrl).href, display:"standalone", background_color:"#08090a", theme_color:"#08090a", icons:[{src:icon192,sizes:"192x192",type:"image/png",purpose:"any"},{src:icon512,sizes:"512x512",type:"image/png",purpose:"any"}] };
+        try {
+          var blob = new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"});
+          var link = document.getElementById("app-manifest");
+          link.href = URL.createObjectURL(blob);
+          document.querySelector('link[rel="apple-touch-icon"]').href = iconData(180);
+          document.querySelector('link[rel="icon"]').href = icon192;
+        } catch (e) {}
+      }
+      function addInstallControl() {
+        var card = document.querySelector("#view-settings .section-card:nth-of-type(1)");
+        if (!card) return;
+        var row = document.createElement("div");
+        row.className = "setting-row";
+        row.innerHTML = '<div><div class="setting-title">Installer l’application</div><div class="setting-desc" id="installHelp">Après hébergement HTTPS : iPhone, Partager puis « Sur l’écran d’accueil » ; Android, menu du navigateur. Cette version unique ne met pas encore la page en cache hors ligne.</div></div><button class="button small" id="installButton" type="button" style="display:inline-flex;align-items:center">Installer</button>';
+        card.appendChild(row);
+        document.getElementById("installButton").addEventListener("click", function () {
+          if (deferredInstall) {
+            deferredInstall.prompt();
+            deferredInstall.userChoice.then(function () { deferredInstall = null; document.getElementById("installButton").style.display = "none"; });
+          } else showToast("Utilisez le menu Partager ou du navigateur pour l’ajouter.");
+        });
+      }
+      document.getElementById("expenseCategory").innerHTML = categories.map(function (c) { return '<option value="' + escapeHTML(c) + '">' + escapeHTML(c) + '</option>'; }).join("");
+      installManifest();
+      bindEvents();
+      addInstallControl();
+      render();
+    })();
+  </script>
+</body>
+</html>
