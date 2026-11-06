@@ -61,6 +61,7 @@
     .card { border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 14px 40px rgba(0,0,0,.16); }
     .balance-card { position:relative; overflow:hidden; padding:23px 22px 20px; background:linear-gradient(145deg, rgba(40,27,28,.94), rgba(22,23,26,.88) 53%, rgba(22,23,26,.92)); }
     .balance-card:after { content:""; position:absolute; right:-59px; top:-80px; width:200px; height:200px; border:1px solid rgba(255,59,48,.16); border-radius:50%; box-shadow:0 0 0 22px rgba(255,59,48,.025),0 0 0 44px rgba(255,59,48,.018); pointer-events:none; }
+    .balance-art { position:absolute;z-index:0;right:18px;top:9px;width:76px;height:76px;opacity:.76;pointer-events:none;animation:art-float 5s ease-in-out infinite; }
     .eyebrow { color:var(--muted); font-size:9px; font-weight:650; }
     .balance-label { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
     .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px rgba(255,59,48,.9); }
@@ -111,6 +112,9 @@
     .delete-button { width:29px; height:29px; display:grid; place-items:center; color:#777a80; background:none; border:0; border-radius:9px; cursor:pointer; }
     .delete-button:hover { color:var(--accent); background:rgba(255,59,48,.1); }
     .empty-state { text-align:center; color:var(--muted); padding:20px 10px; font-size:11px; line-height:1.6; }
+    .empty-illustration { display:block;width:49px;height:49px;margin:0 auto 8px;opacity:.85;animation:art-float 4.8s ease-in-out infinite; }
+    .setup-launch { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:12px;padding:14px 15px;border:1px solid rgba(255,59,48,.16);border-radius:18px;background:linear-gradient(110deg,rgba(255,59,48,.075),rgba(255,255,255,.018)); }
+    .setup-launch-copy { min-width:0; }
     .button { min-height:44px; padding:0 15px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.06); color:var(--text); cursor:pointer; font-size:12px; font-weight:600; transition:transform .16s,background .2s; }
     .button:hover { background:rgba(255,255,255,.1); }
     .button.primary { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 7px 20px rgba(255,59,48,.18); }
@@ -189,6 +193,7 @@
     @keyframes rise { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
     @keyframes fade { from{opacity:0} to{opacity:1} }
     @keyframes slide { from{opacity:.7;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes art-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
     @media (min-width:680px) {
       body { padding-top:32px; }
       .topbar { margin-bottom:29px; }
@@ -254,6 +259,7 @@
     <section class="view active" id="view-home" aria-label="Tableau de bord">
       <div class="dashboard-grid">
         <article class="card balance-card">
+          <svg class="balance-art" viewBox="0 0 90 90" aria-hidden="true"><circle cx="49" cy="42" r="32" fill="rgba(255,59,48,.07)" stroke="rgba(255,116,108,.32)"/><path d="M23 62h48" stroke="#ff746c" stroke-opacity=".35" stroke-width="1.5"/><rect x="29" y="46" width="8" height="16" rx="2" fill="#f6a45d" opacity=".78"/><rect x="42" y="37" width="8" height="25" rx="2" fill="#ff746c" opacity=".9"/><rect x="55" y="28" width="8" height="34" rx="2" fill="#8bd6ae"/><path d="m26 39 15-8 12 2 15-13" fill="none" stroke="#ffd166" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="68" cy="20" r="3" fill="#ffd166"/></svg>
           <div class="balance-label"><span class="live-dot"></span><span class="eyebrow">Disponible ce mois</span></div>
           <div class="balance-value" id="balanceValue">0 €</div>
           <div class="balance-sub"><span id="spentText">0 € dépensés</span><span id="salaryText">Salaire non défini</span></div>
@@ -345,6 +351,7 @@
           <div class="field"><label for="savingsTargetInput">Objectif d’épargne (€)</label><input class="input" id="savingsTargetInput" name="savingsTarget" type="number" min="0" step="0.01" placeholder="Ex. 5 000"></div>
           <button class="button primary" type="submit">Enregistrer le salaire</button>
         </form>
+        <div class="setup-launch"><div class="setup-launch-copy"><div class="setting-title">Personnaliser Ledger</div><div class="setting-desc">Revoir les questions de départ et tes charges récurrentes, sans effacer tes dépenses.</div></div><button class="button small" type="button" id="reopenSetupButton">Ouvrir</button></div>
       </article>
       <article class="card section-card">
         <div class="section-heading"><h2 class="section-title">Données</h2><span class="eyebrow section-tag">Sur cet appareil</span></div>
@@ -414,13 +421,13 @@
   <div class="modal-backdrop" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
     <div class="modal">
       <div class="modal-head"><h2 class="modal-title" id="setupTitle">On règle Ledger à ta façon</h2><svg class="illustration" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="39" fill="rgba(255,59,48,.09)"/><rect x="27" y="35" width="47" height="38" rx="8" fill="none" stroke="#ff746c" stroke-width="3"/><path d="M35 35v-8h31v8M37 48h25M37 57h18" fill="none" stroke="#ffd1ce" stroke-width="3" stroke-linecap="round"/><circle cx="67" cy="63" r="9" fill="#ff3b30"/><path d="M67 58v10m-3-7h5" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-      <p class="setting-desc" style="line-height:1.55">Quelques repères pour préparer ton budget. Rien ne quitte ton appareil. Tu pourras tout modifier plus tard.</p>
+      <p class="setting-desc" id="setupDescription" style="line-height:1.55">Quelques repères pour préparer ton budget. Rien ne quitte ton appareil. Tu pourras tout modifier plus tard.</p>
       <form id="setupForm">
         <div class="form-grid"><div class="field"><label for="setupSalary">Salaire mensuel (€)</label><input class="input" id="setupSalary" name="salary" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Facultatif"></div><div class="field"><label for="setupPayday">Jour de salaire</label><input class="input" id="setupPayday" name="payday" type="number" min="1" max="31" value="26"></div></div>
         <div class="form-grid"><div class="field"><label for="setupSavings">Épargne actuelle (€)</label><input class="input" id="setupSavings" name="savings" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div><div class="field"><label for="setupTarget">Objectif (€)</label><input class="input" id="setupTarget" name="target" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Facultatif"></div></div>
         <div class="eyebrow" style="margin:8px 0">Charges fréquentes · coche puis indique ton montant</div>
         <div id="setupBills"></div>
-        <div class="modal-actions"><button class="button ghost" type="button" id="skipSetup">Plus tard</button><button class="button primary" type="submit">Personnaliser l’app</button></div>
+        <div class="modal-actions"><button class="button ghost" type="button" id="skipSetup">Plus tard</button><button class="button primary" type="submit" id="setupAction">Personnaliser l’app</button></div>
       </form>
     </div>
   </div>
@@ -445,6 +452,7 @@
       var toastTimer = null;
       var deferredInstall = null;
       var savingsMode = "deposit";
+      var setupReview = false;
       var commonRecurring = [
         { name:"Netflix", amount:13.49, day:5 }, { name:"Spotify", amount:11.12, day:8 },
         { name:"Fitness Park", amount:0, day:10 }, { name:"Téléphone / Internet", amount:0, day:12 },
@@ -457,7 +465,7 @@
       var longDateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
       function loadState() {
-        var fallback = { salary: 0, salaries: {}, payday: 26, savingsBalance: 0, savingsTarget: 0, savingsHistory: [], expenses: [], bills: [], recurringBills: [], billPayments: {}, setupComplete: false };
+        var fallback = { salary: 0, salaries: {}, payday: 26, savingsBalance: 0, savingsTarget: 0, savingsHistory: [], expenses: [], bills: [], recurringBills: [], billPayments: {}, setupComplete: false, setupVersion: 0 };
         try {
           var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
           if (!parsed || typeof parsed !== "object") return fallback;
@@ -473,7 +481,8 @@
           saved.billPayments = saved.billPayments && typeof saved.billPayments === "object" ? saved.billPayments : {};
           saved.expenses = Array.isArray(saved.expenses) ? saved.expenses.filter(validExpense) : [];
           saved.bills = Array.isArray(saved.bills) ? saved.bills.filter(validBill) : [];
-          saved.setupComplete = parsed.setupComplete === undefined ? true : !!parsed.setupComplete;
+          saved.setupVersion = Number(saved.setupVersion) || 0;
+          saved.setupComplete = saved.setupVersion >= 2 && !!parsed.setupComplete;
           return saved;
         } catch (error) { return fallback; }
       }
@@ -636,7 +645,7 @@
         document.getElementById("billRemaining").textContent = money(remaining);
         document.getElementById("billList").innerHTML = bills.length ? bills.map(function (bill) {
           return '<div class="bill-row' + (bill.paid ? ' bill-paid' : '') + '"><input class="bill-check" type="checkbox" data-toggle-bill="' + escapeHTML(bill.id) + '" data-recurring-id="' + escapeHTML(bill.recurringId || "") + '" ' + (bill.paid ? "checked" : "") + ' aria-label="Marquer ' + escapeHTML(bill.name) + ' comme payée"><div class="row-main"><div class="row-title">' + escapeHTML(bill.name) + (bill.recurring ? ' <span class="eyebrow" style="color:#8bd6ae">· récurrente</span>' : '') + '</div><div class="row-sub">Échéance · ' + escapeHTML(monthDateLabel(bill.dueDate, false)) + '</div></div><div class="row-amount">' + money(bill.amount) + '</div><button class="delete-button" type="button" data-delete-bill="' + escapeHTML(bill.recurring ? bill.recurringId : bill.id) + '" data-is-recurring="' + (bill.recurring ? "true" : "false") + '" aria-label="Supprimer la facture ' + escapeHTML(bill.name) + '"><svg width="15" height="15"><use href="#i-close"></use></svg></button></div>';
-        }).join("") : '<div class="empty-state">Aucune facture pour ce mois.<br>Ajoutez votre première échéance.</div>';
+        }).join("") : '<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="rgba(246,164,93,.08)" stroke="rgba(246,164,93,.26)"/><rect x="19" y="17" width="27" height="32" rx="6" fill="#1d1d20" stroke="#f6a45d" stroke-opacity=".78" stroke-width="1.6"/><path d="M25 27h15M25 33h11M25 39h8" stroke="#ffd1a1" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/><circle cx="43" cy="43" r="7" fill="#ff3b30"/><path d="M43 39v8m-2-5h4" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>Aucune facture pour ce mois.<br>Ajoute une échéance quand tu veux.</div>';
       }
       function renderStats(expenses, monthExpenses) {
         var totals = grouped(expenses);
@@ -730,7 +739,7 @@
       }
       function checkOnboardingAndSalary() {
         if (!state.setupComplete) {
-          openModal("setupModal");
+          openSetup(false);
           return;
         }
         var now = new Date();
@@ -745,6 +754,25 @@
           return '<div class="setup-option"><input type="checkbox" id="setupBill' + index + '" name="bill-' + index + '"><label for="setupBill' + index + '">' + escapeHTML(item.name) + '</label><input class="input" type="number" min="0" step="0.01" inputmode="decimal" id="setupAmount' + index + '" placeholder="' + (item.amount ? item.amount.toFixed(2) : '€ / mois') + '" aria-label="Montant de ' + escapeHTML(item.name) + '"></div>';
         }).join("");
       }
+      function openSetup(isReview) {
+        setupReview = !!isReview;
+        var currentMonthSalary = Number(salaryRecord(monthKey(new Date())).amount) || 0;
+        document.getElementById("setupSalary").value = currentMonthSalary || "";
+        document.getElementById("setupPayday").value = String(state.payday || 26);
+        document.getElementById("setupSavings").value = String(Number(state.savingsBalance) || 0);
+        document.getElementById("setupTarget").value = Number(state.savingsTarget) || "";
+        commonRecurring.forEach(function (item, index) {
+          var itemName = normalizeHeader(item.name);
+          var existing = state.recurringBills.find(function (bill) { return normalizeHeader(bill.name) === itemName; });
+          document.getElementById("setupBill" + index).checked = !!existing && existing.active !== false;
+          document.getElementById("setupAmount" + index).value = existing ? String(existing.amount) : "";
+        });
+        document.getElementById("setupTitle").textContent = setupReview ? "Ta configuration Ledger" : "On règle Ledger à ta façon";
+        document.getElementById("setupDescription").textContent = setupReview ? "Tes dépenses, factures payées et salaires enregistrés restent en place. Les champs reprennent tes réglages actuels." : "Quelques repères pour préparer ton budget. Rien ne quitte ton appareil. Tu pourras tout modifier plus tard.";
+        document.getElementById("setupAction").textContent = setupReview ? "Enregistrer" : "Personnaliser l’app";
+        document.getElementById("skipSetup").textContent = setupReview ? "Fermer" : "Plus tard";
+        openModal("setupModal");
+      }
       function bindEvents() {
         document.querySelectorAll("[data-view]").forEach(function (button) { button.addEventListener("click", function () { setView(button.dataset.view); }); });
         document.getElementById("prevMonth").addEventListener("click", function () { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1); render(); });
@@ -752,6 +780,7 @@
         document.getElementById("addExpenseButton").addEventListener("click", openExpense);
         document.getElementById("seeAllExpenses").addEventListener("click", function () { setView("stats"); });
         document.getElementById("addBillButton").addEventListener("click", openBill);
+        document.getElementById("reopenSetupButton").addEventListener("click", function () { openSetup(true); });
         document.getElementById("saveMoneyButton").addEventListener("click", function () { savingsMode = "deposit"; document.getElementById("savingsModalTitle").textContent = "Ajouter à mon épargne"; document.querySelector("#savingsForm button.primary").textContent = "Épargner"; document.getElementById("savingsForm").reset(); openModal("savingsModal"); });
         document.getElementById("withdrawMoneyButton").addEventListener("click", function () { savingsMode = "withdraw"; document.getElementById("savingsModalTitle").textContent = "Retirer de mon épargne"; document.querySelector("#savingsForm button.primary").textContent = "Retirer"; document.getElementById("savingsForm").reset(); openModal("savingsModal"); });
         document.querySelectorAll("[data-close]").forEach(function (button) { button.addEventListener("click", function () { closeModal(button.dataset.close); }); });
@@ -800,14 +829,24 @@
           state.savingsTarget = Math.max(0, Number(form.get("target")) || 0);
           if (salary > 0) saveSalary(monthKey(new Date()), salary);
           commonRecurring.forEach(function (item, index) {
-            if (!document.getElementById("setupBill" + index).checked) return;
-            var amount = Number(document.getElementById("setupAmount" + index).value) || item.amount;
-            if (amount > 0) state.recurringBills.push({ id:makeId(), name:item.name, amount:amount, day:item.day, startMonth:monthKey(new Date()), active:true });
+            var itemName = normalizeHeader(item.name);
+            var existing = state.recurringBills.find(function (bill) { return normalizeHeader(bill.name) === itemName; });
+            if (!document.getElementById("setupBill" + index).checked) {
+              if (setupReview && existing) existing.active = false;
+              return;
+            }
+            var amount = Number(document.getElementById("setupAmount" + index).value) || (existing ? Number(existing.amount) : item.amount);
+            if (!(amount > 0)) return;
+            if (existing) { existing.amount = Math.round(amount * 100) / 100; existing.day = item.day; existing.active = true; }
+            else state.recurringBills.push({ id:makeId(), name:item.name, amount:Math.round(amount * 100) / 100, day:item.day, startMonth:monthKey(new Date()), active:true });
           });
-          state.setupComplete = true; persist(); closeModal("setupModal"); render(); showToast("Ton espace est prêt");
+          state.setupComplete = true; state.setupVersion = 2; persist(); closeModal("setupModal"); render(); showToast(setupReview ? "Configuration mise à jour" : "Ton espace est prêt");
           setTimeout(checkOnboardingAndSalary, 350);
         });
-        document.getElementById("skipSetup").addEventListener("click", function () { state.setupComplete = true; persist(); closeModal("setupModal"); checkOnboardingAndSalary(); });
+        document.getElementById("skipSetup").addEventListener("click", function () {
+          if (setupReview) { closeModal("setupModal"); return; }
+          state.setupComplete = true; state.setupVersion = 2; persist(); closeModal("setupModal"); checkOnboardingAndSalary();
+        });
         document.getElementById("savingsForm").addEventListener("submit", function (event) {
           event.preventDefault();
           var form = new FormData(event.currentTarget);
@@ -850,7 +889,7 @@
         });
         document.getElementById("resetButton").addEventListener("click", function () {
           if (!window.confirm("Effacer toutes les dépenses, factures et le salaire enregistrés sur cet appareil ? Cette action est irréversible.")) return;
-          state = { salary:0, salaries:{}, payday:26, savingsBalance:0, savingsTarget:0, savingsHistory:[], expenses:[], bills:[], recurringBills:[], billPayments:{}, setupComplete:true }; persist(); render(); showToast("Données effacées");
+          state = { salary:0, salaries:{}, payday:26, savingsBalance:0, savingsTarget:0, savingsHistory:[], expenses:[], bills:[], recurringBills:[], billPayments:{}, setupComplete:true, setupVersion:2 }; persist(); render(); showToast("Données effacées");
         });
         document.getElementById("importButton").addEventListener("click", function () { document.getElementById("csvFile").click(); });
         document.getElementById("csvFile").addEventListener("change", importCSV);
