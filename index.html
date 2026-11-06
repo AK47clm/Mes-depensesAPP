@@ -62,6 +62,9 @@
     .balance-card { position:relative; overflow:hidden; padding:23px 22px 20px; background:linear-gradient(145deg, rgba(40,27,28,.94), rgba(22,23,26,.88) 53%, rgba(22,23,26,.92)); }
     .balance-card:after { content:""; position:absolute; right:-59px; top:-80px; width:200px; height:200px; border:1px solid rgba(255,59,48,.16); border-radius:50%; box-shadow:0 0 0 22px rgba(255,59,48,.025),0 0 0 44px rgba(255,59,48,.018); pointer-events:none; }
     .balance-art { position:absolute;z-index:0;right:18px;top:9px;width:76px;height:76px;opacity:.76;pointer-events:none;animation:art-float 5s ease-in-out infinite; }
+    .balance-art rect { transform-box:fill-box;transform-origin:bottom;animation:bar-grow .72s cubic-bezier(.2,.8,.2,1) both; }
+    .balance-art rect:nth-of-type(2) { animation-delay:.09s; }
+    .balance-art rect:nth-of-type(3) { animation-delay:.18s; }
     .eyebrow { color:var(--muted); font-size:9px; font-weight:650; }
     .balance-label { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
     .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px rgba(255,59,48,.9); }
@@ -72,6 +75,15 @@
     .balance-foot { position:relative; z-index:1; display:flex; justify-content:space-between; color:var(--muted); font-size:10px; }
     .quick-stats { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin:12px 0; }
     .mini-card { min-height:91px; padding:15px 15px 13px; }
+    .mini-card-link { position:relative;cursor:pointer;transition:transform .2s,border-color .2s,background .2s; }
+    .mini-card-link:after { content:"›";position:absolute;right:12px;bottom:11px;color:#ff8e86;font-size:17px;line-height:10px;opacity:.8;transition:transform .2s,opacity .2s; }
+    .mini-card-link:hover:after { transform:translateX(2px);opacity:1; }
+    .mini-card-link:hover { transform:translateY(-2px);border-color:rgba(255,255,255,.18); }
+    .mini-card-link:active { transform:scale(.975); }
+    .mini-card-link:focus-visible { outline:2px solid rgba(255,116,108,.8);outline-offset:2px; }
+    .quick-stats .mini-card { animation:rise .42s ease both; }
+    .quick-stats .mini-card:nth-child(2) { animation-delay:.06s; }
+    .quick-stats .mini-card:nth-child(3) { animation-delay:.12s; }
     .mini-head { display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:10px; }
     .mini-icon { color:#aaaeb5; }
     .mini-value { font-size:20px; font-weight:650; letter-spacing:-.04em; margin-top:13px; font-variant-numeric:tabular-nums; }
@@ -109,6 +121,7 @@
     .row-title { font-size:12px; font-weight:590; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .row-sub { margin-top:4px; color:var(--muted); font-size:9px; }
     .row-amount { font-size:12px; font-weight:640; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .row-paid-mark { color:var(--green);font:8px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;text-align:right; }
     .delete-button { width:29px; height:29px; display:grid; place-items:center; color:#777a80; background:none; border:0; border-radius:9px; cursor:pointer; }
     .delete-button:hover { color:var(--accent); background:rgba(255,59,48,.1); }
     .empty-state { text-align:center; color:var(--muted); padding:20px 10px; font-size:11px; line-height:1.6; }
@@ -181,6 +194,8 @@
     .salary-chart text { fill:#8d9097;font:9px ui-monospace,monospace; }
     .salary-chart .salary-area { fill:url(#salaryFill); }
     .salary-chart .salary-line { fill:none;stroke:#ff746c;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round; }
+    .salary-chart .daily-area { fill:url(#dailyFill);animation:rise .45s ease both; }
+    .salary-chart .daily-line { fill:none;stroke:#ff665d;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1000;stroke-dashoffset:1000;animation:draw-line .9s ease-out both; }
     .salary-chart circle { fill:#ff3b30;stroke:#17181b;stroke-width:2; }
     .setup-option { display:grid;grid-template-columns:20px minmax(0,1fr) 95px;gap:9px;align-items:center;padding:10px 0;border-top:1px solid var(--line); }
     .setup-option input[type=checkbox] { accent-color:var(--accent);width:17px;height:17px; }
@@ -194,6 +209,8 @@
     @keyframes fade { from{opacity:0} to{opacity:1} }
     @keyframes slide { from{opacity:.7;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
     @keyframes art-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+    @keyframes bar-grow { from{transform:scaleY(.25)} to{transform:scaleY(1)} }
+    @keyframes draw-line { to{stroke-dashoffset:0} }
     @media (min-width:680px) {
       body { padding-top:32px; }
       .topbar { margin-bottom:29px; }
@@ -267,15 +284,15 @@
           <div class="balance-foot"><span>Consommation du salaire</span><span id="progressLabel">0 %</span></div>
         </article>
         <div class="quick-stats">
-          <article class="card mini-card">
+          <article class="card mini-card mini-card-link" role="button" tabindex="0" data-view="stats" aria-label="Ouvrir le détail des dépenses">
             <div class="mini-head"><span>Dépenses du mois</span><svg class="mini-icon" width="16" height="16"><use href="#i-trend"/></svg></div>
             <div class="mini-value" id="monthSpend">0 €</div><div class="mini-note" id="expenseCount">0 opération</div>
           </article>
-          <article class="card mini-card">
+          <article class="card mini-card mini-card-link" role="button" tabindex="0" data-view="bills" aria-label="Ouvrir les factures du mois">
             <div class="mini-head"><span>Factures restantes</span><svg class="mini-icon" width="16" height="16"><use href="#i-receipt"/></svg></div>
             <div class="mini-value" id="billRemainingMini">0 €</div><div class="mini-note" id="billCountMini">0 facture</div>
           </article>
-          <article class="card mini-card saving-teaser" role="button" tabindex="0" data-view="savings">
+          <article class="card mini-card mini-card-link saving-teaser" role="button" tabindex="0" data-view="savings" aria-label="Ouvrir le suivi de l’épargne">
             <div class="mini-head"><span>Mon épargne</span><svg class="mini-icon" width="16" height="16"><use href="#i-home"/></svg></div>
             <div class="mini-value" id="savingsMini">0 €</div><div class="mini-note">Toucher pour le suivi</div>
           </article>
@@ -313,7 +330,7 @@
         <div class="list" id="billList"></div>
         <div class="bill-total"><span class="eyebrow">Total restant</span><strong id="billRemaining">0 €</strong></div>
       </article>
-      <p class="fine-print" style="padding:0 5px;margin-top:13px">Le statut payé et les échéances sont enregistrés uniquement sur cet appareil.</p>
+      <p class="fine-print" style="padding:0 5px;margin-top:13px">Une facture cochée payée est comptée dans tes dépenses et déduite du disponible du mois. Ne la saisis pas une deuxième fois comme dépense. Le statut reste enregistré sur cet appareil.</p>
     </section>
     <section class="view" id="view-stats" aria-label="Statistiques">
       <div class="view-header"><div><h1 class="view-heading">Statistiques</h1><div class="view-subtitle">Votre mois, en détail</div></div></div>
@@ -478,6 +495,7 @@
           saved.savingsTarget = Math.max(0, Number(saved.savingsTarget) || 0);
           saved.savingsHistory = Array.isArray(saved.savingsHistory) ? saved.savingsHistory : [];
           saved.recurringBills = Array.isArray(saved.recurringBills) ? saved.recurringBills.filter(function (x) { return x && x.id && Number(x.amount) > 0; }) : [];
+          saved.recurringBills.forEach(function (item) { if (item.active === false && !item.endMonth) item.endMonth = monthKey(new Date()); });
           saved.billPayments = saved.billPayments && typeof saved.billPayments === "object" ? saved.billPayments : {};
           saved.expenses = Array.isArray(saved.expenses) ? saved.expenses.filter(validExpense) : [];
           saved.bills = Array.isArray(saved.bills) ? saved.bills.filter(validBill) : [];
@@ -528,15 +546,29 @@
       }
       function activeBills() {
         var key = monthKey(monthCursor);
-        var bills = state.bills.filter(function (item) { return isoMonth(item.dueDate) === key; }).map(function (x) { return Object.assign({}, x); });
+        var bills = state.bills.filter(function (item) { return isoMonth(item.dueDate) === key; }).map(function (x) {
+          var copy = Object.assign({}, x);
+          copy.paid = !!copy.paid;
+          copy.paidDate = copy.paid ? (copy.paidDate || copy.dueDate) : "";
+          return copy;
+        });
         state.recurringBills.forEach(function (item) {
-          if (item.active === false || key < item.startMonth) return;
+          if (key < item.startMonth || (item.endMonth && key > item.endMonth) || (item.active === false && !item.endMonth)) return;
           var parts = key.split("-").map(Number);
           var finalDay = new Date(parts[0], parts[1], 0).getDate();
           var dueDate = key + "-" + String(Math.min(Number(item.day) || 1, finalDay)).padStart(2, "0");
-          bills.push({ id:"recurring-" + item.id + "-" + key, recurringId:item.id, name:item.name, amount:Number(item.amount), dueDate:dueDate, paid:!!state.billPayments[key + "|" + item.id], recurring:true });
+          var payment = state.billPayments[key + "|" + item.id];
+          var paid = payment && typeof payment === "object" ? !!payment.paid : !!payment;
+          var paidDate = paid && payment && typeof payment === "object" ? (payment.paidDate || dueDate) : (paid ? dueDate : "");
+          bills.push({ id:"recurring-" + item.id + "-" + key, recurringId:item.id, name:item.name, amount:Number(item.amount), dueDate:dueDate, paid:paid, paidDate:paidDate, recurring:true });
         });
         return bills.sort(function (a, b) { return a.dueDate.localeCompare(b.dueDate); });
+      }
+      function paidBillTransactions(bills) {
+        return bills.filter(function (bill) { return bill.paid; }).map(function (bill) {
+          var date = bill.paidDate || bill.dueDate;
+          return { id:"paid-bill-" + bill.id, amount:Number(bill.amount), category:"Factures", date:date, note:bill.name, createdAt:date + "T12:00:00", billTransaction:true };
+        });
       }
       function sum(items, field) { return items.reduce(function (total, item) { return total + (Number(item[field]) || 0); }, 0); }
       function grouped(expenses) {
@@ -549,11 +581,12 @@
       function expenseRow(item) {
         var index = Math.max(0, categories.indexOf(item.category));
         var title = item.note && item.note.trim() ? item.note.trim() : item.category;
-        return '<div class="expense-row"><div class="category-icon" style="color:' + categoryColors[index] + '">' + iconMarkup(index) + '</div><div class="row-main"><div class="row-title">' + escapeHTML(title) + '</div><div class="row-sub">' + escapeHTML(item.category) + ' · ' + escapeHTML(monthDateLabel(item.date, false)) + (item.imported ? ' · CSV' : '') + '</div></div><div class="row-amount">−' + money(item.amount) + '</div><button class="delete-button" type="button" data-delete-expense="' + escapeHTML(item.id) + '" aria-label="Supprimer ' + escapeHTML(title) + '"><svg width="15" height="15"><use href="#i-close"></use></svg></button></div>';
+        var action = item.billTransaction ? '<span class="row-paid-mark">payée</span>' : '<button class="delete-button" type="button" data-delete-expense="' + escapeHTML(item.id) + '" aria-label="Supprimer ' + escapeHTML(title) + '"><svg width="15" height="15"><use href="#i-close"></use></svg></button>';
+        return '<div class="expense-row"><div class="category-icon" style="color:' + categoryColors[index] + '">' + iconMarkup(index) + '</div><div class="row-main"><div class="row-title">' + escapeHTML(title) + '</div><div class="row-sub">' + escapeHTML(item.category) + ' · ' + escapeHTML(monthDateLabel(item.date, false)) + (item.imported ? ' · CSV' : '') + '</div></div><div class="row-amount">−' + money(item.amount) + '</div>' + action + '</div>';
       }
       function render() {
-        var expenses = activeExpenses();
         var bills = activeBills();
+        var expenses = activeExpenses().concat(paidBillTransactions(bills)).sort(function (a, b) { return b.date.localeCompare(a.date) || (b.createdAt || "").localeCompare(a.createdAt || ""); });
         var monthExpenses = sum(expenses, "amount");
         var salary = currentSalary();
         var remaining = salary - monthExpenses;
@@ -629,14 +662,14 @@
           var isToday = todayISO() === monthKey(monthCursor) + "-" + String(p.point.day).padStart(2, "0");
           return '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + (isToday ? 5 : 3.5) + '" fill="' + (isToday ? "#ff3b30" : "#ffd0cc") + '"><title>' + p.point.day + ' ' + new Intl.DateTimeFormat("fr-FR",{month:"short"}).format(new Date(year,month,1)) + ' · ' + money(p.point.value) + '</title></circle>';
         }).join("");
-        var svg = '<defs><linearGradient id="dailyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff3b30" stop-opacity=".38"/><stop offset="100%" stop-color="#ff3b30" stop-opacity="0"/></linearGradient></defs>' + grid + '<path d="' + area + '" fill="url(#dailyFill)"/><path d="' + line + '" fill="none" stroke="#ff665d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' + selected + '<text x="10" y="150">1</text><text x="317" y="150">' + count + '</text>';
+        var svg = '<defs><linearGradient id="dailyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff3b30" stop-opacity=".38"/><stop offset="100%" stop-color="#ff3b30" stop-opacity="0"/></linearGradient></defs>' + grid + '<path class="daily-area" d="' + area + '" fill="url(#dailyFill)"/><path class="daily-line" d="' + line + '"/>' + selected + '<text x="10" y="150">1</text><text x="317" y="150">' + count + '</text>';
         document.getElementById("dailyChart").innerHTML = svg;
         document.getElementById("dailyChart").setAttribute("aria-label", "Courbe des dépenses quotidiennes, total " + money(sum(expenses, "amount")));
         document.getElementById("daysInMonth").textContent = count + " jours";
       }
       function renderExpenseList(expenses) {
         var recent = expenses.slice(0, 5);
-        document.getElementById("recentExpenses").innerHTML = recent.length ? recent.map(expenseRow).join("") : '<div class="empty-state">Rien à signaler pour le moment.<br>Ajoutez une dépense pour commencer.</div>';
+        document.getElementById("recentExpenses").innerHTML = recent.length ? recent.map(expenseRow).join("") : '<div class="empty-state"><svg class="empty-illustration" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="rgba(139,214,174,.08)" stroke="rgba(139,214,174,.26)"/><path d="M15 28h34v18a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V28Z" fill="#1b2220" stroke="#8bd6ae" stroke-width="1.7"/><path d="M20 28v-6a12 12 0 0 1 24 0v6M23 37h18" fill="none" stroke="#b7e8ca" stroke-width="2" stroke-linecap="round"/><circle cx="44" cy="38" r="7" fill="#ff3b30"/><path d="M44 34v8m-2-5h4" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg>Rien à signaler pour le moment.<br>Ajoute une dépense pour commencer.</div>';
       }
       function renderBills(bills) {
         document.getElementById("billViewSubtitle").textContent = "Échéances de " + monthFormat.format(monthCursor);
@@ -774,7 +807,13 @@
         openModal("setupModal");
       }
       function bindEvents() {
-        document.querySelectorAll("[data-view]").forEach(function (button) { button.addEventListener("click", function () { setView(button.dataset.view); }); });
+        document.querySelectorAll("[data-view]").forEach(function (button) {
+          button.addEventListener("click", function () { setView(button.dataset.view); });
+          button.addEventListener("keydown", function (event) {
+            if (button.getAttribute("role") !== "button" || (event.key !== "Enter" && event.key !== " ")) return;
+            event.preventDefault(); button.click();
+          });
+        });
         document.getElementById("prevMonth").addEventListener("click", function () { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1); render(); });
         document.getElementById("nextMonth").addEventListener("click", function () { monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1); render(); });
         document.getElementById("addExpenseButton").addEventListener("click", openExpense);
@@ -832,12 +871,12 @@
             var itemName = normalizeHeader(item.name);
             var existing = state.recurringBills.find(function (bill) { return normalizeHeader(bill.name) === itemName; });
             if (!document.getElementById("setupBill" + index).checked) {
-              if (setupReview && existing) existing.active = false;
+            if (setupReview && existing) { existing.active = false; existing.endMonth = monthKey(new Date()); }
               return;
             }
             var amount = Number(document.getElementById("setupAmount" + index).value) || (existing ? Number(existing.amount) : item.amount);
             if (!(amount > 0)) return;
-            if (existing) { existing.amount = Math.round(amount * 100) / 100; existing.day = item.day; existing.active = true; }
+            if (existing) { existing.amount = Math.round(amount * 100) / 100; existing.day = item.day; existing.active = true; delete existing.endMonth; }
             else state.recurringBills.push({ id:makeId(), name:item.name, amount:Math.round(amount * 100) / 100, day:item.day, startMonth:monthKey(new Date()), active:true });
           });
           state.setupComplete = true; state.setupVersion = 2; persist(); closeModal("setupModal"); render(); showToast(setupReview ? "Configuration mise à jour" : "Ton espace est prêt");
@@ -868,8 +907,23 @@
           if (delBill) {
             var billId = delBill.dataset.deleteBill;
             if (delBill.dataset.isRecurring === "true") {
+              var removedRecurring = state.recurringBills.find(function (item) { return item.id === billId; });
+              if (removedRecurring) {
+                Object.keys(state.billPayments).forEach(function (key) {
+                  if (!key.endsWith("|" + billId)) return;
+                  var payment = state.billPayments[key];
+                  var paid = payment && typeof payment === "object" ? !!payment.paid : !!payment;
+                  if (paid) {
+                    var paidMonth = key.slice(0, 7);
+                    var parts = paidMonth.split("-").map(Number);
+                    var lastDay = new Date(parts[0], parts[1], 0).getDate();
+                    var dueDate = paidMonth + "-" + String(Math.min(Number(removedRecurring.day) || 1, lastDay)).padStart(2, "0");
+                    state.bills.push({ id:makeId(), name:removedRecurring.name, amount:Number(removedRecurring.amount), dueDate:dueDate, paid:true, paidDate:(payment && typeof payment === "object" && payment.paidDate) || dueDate });
+                  }
+                  delete state.billPayments[key];
+                });
+              }
               state.recurringBills = state.recurringBills.filter(function (item) { return item.id !== billId; });
-              Object.keys(state.billPayments).forEach(function (key) { if (key.endsWith("|" + billId)) delete state.billPayments[key]; });
             } else state.bills = state.bills.filter(function (item) { return item.id !== billId; });
             persist(); render(); haptic(); showToast("Facture supprimée");
           }
@@ -880,12 +934,18 @@
           var recurringId = checkbox.dataset.recurringId;
           if (recurringId) {
             var billKey = monthKey(monthCursor) + "|" + recurringId;
-            state.billPayments[billKey] = checkbox.checked;
+            var recurringBill = activeBills().find(function (item) { return item.id === checkbox.dataset.toggleBill; });
+            var recurringDue = recurringBill ? recurringBill.dueDate : todayISO();
+            var recurringPaidDate = monthKey(monthCursor) === monthKey(new Date()) ? todayISO() : recurringDue;
+            state.billPayments[billKey] = checkbox.checked ? { paid:true, paidDate:recurringPaidDate } : false;
           } else {
             var bill = state.bills.find(function (item) { return item.id === checkbox.dataset.toggleBill; });
-            if (bill) bill.paid = checkbox.checked;
+            if (bill) {
+              bill.paid = checkbox.checked;
+              bill.paidDate = checkbox.checked ? (monthKey(monthCursor) === monthKey(new Date()) ? todayISO() : bill.dueDate) : "";
+            }
           }
-          persist(); render(); haptic();
+          persist(); render(); haptic(); showToast(checkbox.checked ? "Facture déduite du disponible" : "Solde du mois recalculé");
         });
         document.getElementById("resetButton").addEventListener("click", function () {
           if (!window.confirm("Effacer toutes les dépenses, factures et le salaire enregistrés sur cet appareil ? Cette action est irréversible.")) return;
